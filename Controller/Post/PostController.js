@@ -54,7 +54,7 @@ export const deletePostController = async (req, res) => {
 
 export const createPostController = async (req, res) => {
   const { title, content, createdAt, updatedAt, imageUrl } = req.body;
-  const userId = req.user.userId.userId;
+  const userId = req.user.userId;
 
   const findUserQuery =
     "insert into post (userId,postId, title, content, createdAt, updatedAt, imageUrl) values(?,?,?,?,?,?,?)";
@@ -80,25 +80,60 @@ export const createPostController = async (req, res) => {
 };
 
 export const updatePostController = async (req, res) => {
-    const {postId, title, content, updatedAt, imageUrl } = req.body;
-    const userId = req.user.userId.userId;
-    
-    const findUserQuery = 'UPDATE post SET title = ?, content = ?, updatedAt = ?, imageUrl = ? WHERE postId =?'
+  const { postId, title, content, updatedAt, imageUrl } = req.body;
 
-    const passData = [
-      title,
-      content,
-      updatedAt,
-      imageUrl,
-      postId
-    ];
-    connection.query(findUserQuery, passData, (err, data) => {
-      if (err) {
-        res.status(400).json(CreateResponse(err.sqlMessage));
+  const findUserQuery =
+    "UPDATE post SET title = ?, content = ?, updatedAt = ?, imageUrl = ? WHERE postId =?";
+
+  const passData = [title, content, updatedAt, imageUrl, postId];
+  connection.query(findUserQuery, passData, (err, data) => {
+    if (err) {
+      res.status(400).json(CreateResponse(err.sqlMessage));
+    } else {
+      res
+        .status(200)
+        .json(CreateResponse(null, null, "Post Updated SuccessFully!"));
+    }
+  });
+};
+
+export const LikePostController = async (req, res) => {
+  const { postId } = req.body;
+  const userId = req.user.userId;
+  const checkLike = "select * from likes where userId = ? and  postId = ?";
+  const unlikePost = "delete from likes where userId = ? and  postId = ?";
+  const likePostQuery =
+    "insert into likes (userId, postId, likeId) values(?,?,?)";
+  const likeId = uuidv4();
+  connection.query(checkLike, [userId, postId], (err, data) => {
+    if (err) {
+      res.status(400).json(CreateResponse(err.sqlMessage));
+    } else {
+      if (data.length > 0) {
+        connection.query(unlikePost, [userId, postId], (err, data) => {
+          if (err) {
+            res.status(400).json(CreateResponse(err.sqlMessage));
+          } else {
+            res
+              .status(200)
+              .json(CreateResponse(null, null, "Post UnLiked Successfully"));
+          }
+        });
       } else {
-        res
-          .status(200)
-          .json(CreateResponse(null, null, "Post Updated SuccessFully!"));
+        connection.query(
+          likePostQuery,
+          [userId, postId, likeId],
+          (err, data) => {
+            if (err) {
+              res.status(400).json(CreateResponse(err.sqlMessage));
+            } else {
+              res
+                .status(200)
+                .json(CreateResponse(null, null, "Post Liked Successfully"));
+            }
+          }
+        );
       }
-    });
+    }
+  });
 };
