@@ -17,8 +17,9 @@ export const jwtVerifier = (req, res, next) => {
         .json(
           CreateResponse("You are not Authenticated. Please Login to continue.")
         );
+    }else{
+      req.user = decoded.data;
+      next();
     }
-    req.user = decoded.data;
   });
-  next();
 };

@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import moment from "moment";
 const { JWT_SECRET, SALT } = process.env;
 
 export function CreateResponse(error, data, message) {
@@ -36,4 +37,15 @@ export function genrateToken(data) {
 
 export function genrateHashPassword(password) {
   return bcrypt.hashSync(password, parseInt(SALT));
+}
+
+export function formatDate(inputdate) {
+  let timestamp;
+
+  if (inputdate) {
+    timestamp = inputdate;
+  } else {
+    timestamp = new Date();
+  }
+  return moment(timestamp).format("YYYY-MM-DD hh:mm:ss");
 }

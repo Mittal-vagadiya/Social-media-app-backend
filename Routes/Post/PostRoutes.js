@@ -8,8 +8,8 @@ postRoutes.get('/getPost/:id',getPostController);
 postRoutes.get('/getAllPost',getAllPostController);
 postRoutes.delete('/deletePost/:id',deletePostController);
 postRoutes.post('/createPost',createPostController);
-postRoutes.post('/updatePost',updatePostController)
-postRoutes.post('/likePost',LikePostController)
+postRoutes.post('/updatePost',updatePostController);
+postRoutes.post('/likePost',LikePostController);
 
 
 export default postRoutes;
