@@ -71,21 +71,22 @@ export const deleteUserController = async (req, res) => {
 
 export const createUserController = async (req, res) => {
   const { userName, email, password, bio, age } = req.body;
+  console.log('req.body :>> ', req.body);
+  console.log('req.file :>> ', req.file);
+  // const findUserQuery =
+  //   "insert into user (userId,email,userName,password,bio,age) values(?,?,?,?,?,?)";
+  // const userId = uuidv4();
 
-  const findUserQuery =
-    "insert into user (userId,email,userName,password,bio,age) values(?,?,?,?,?,?)";
-  const userId = uuidv4();
+  // const hash = bcrypt.hashSync(password, salt);
 
-  const hash = bcrypt.hashSync(password, salt);
-
-  const passData = [userId, email, userName, hash, bio, age];
-  connection.query(findUserQuery, passData, async (err, data) => {
-    if (err) {
-      return res.status(400).json(CreateResponse(err.sqlMessage));
-    } else {
-      return await res
-        .status(200)
-        .json(CreateResponse(null, null, "User Created SuccessFully!"));
-    }
-  });
+  // const passData = [userId, email, userName, hash, bio, age];
+  // connection.query(findUserQuery, passData, async (err, data) => {
+  //   if (err) {
+  //     return res.status(400).json(CreateResponse(err.sqlMessage));
+  //   } else {
+  //     return await res
+  //       .status(200)
+  //       .json(CreateResponse(null, null, "User Created SuccessFully!"));
+  //   }
+  // });
 };

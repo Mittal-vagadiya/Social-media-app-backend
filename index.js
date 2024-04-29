@@ -10,6 +10,8 @@ app.use(express.json());
 
 app.use('/',routes)
 
+app.use('/upload', express.static(process.cwd() +  "Uploads"));
+
 app.listen(port, () =>{
     connection.connect(function(err) {
         if (err) throw err;

@@ -5,3 +5,7 @@
 
 # misc
 .env
+
+package-lock.json
+
+/Uploads
