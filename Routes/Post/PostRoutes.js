@@ -4,7 +4,7 @@ import { LikePostController, createPostController, deletePostController, getAllP
 
 const postRoutes = express.Router();
 
-postRoutes.get('/getPost/:id',getPostController);
+postRoutes.get('/getPost',getPostController);
 postRoutes.get('/getAllPost',getAllPostController);
 postRoutes.delete('/deletePost/:id',deletePostController);
 postRoutes.post('/createPost',createPostController);

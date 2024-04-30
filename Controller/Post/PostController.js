@@ -3,8 +3,48 @@ import { CreateResponse, formatDate } from "../../helper.js";
 import { connection } from "../../Connection/dbConnection.js";
 
 export const getPostController = async (req, res) => {
-  const id = req.params.id;
-  const query = "select * from post where postId = ?";
+  const id = req.query.postId;
+  const query = `SELECT 
+  p.*, 
+  (
+    SELECT 
+      JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'commentId', c.commentId,
+          'content', c.content,
+          'createdAt', c.createdAt,
+          'updatedAt', c.updatedAt,
+          'replies', (
+            SELECT 
+              JSON_ARRAYAGG(
+                JSON_OBJECT(
+                  'replyId', r.replyId,
+                  'content', r.content,
+                  'createdAt', r.createdAt,
+                  'updatedAt', r.updatedAt
+                    )
+                  )
+                FROM 
+                  reply r
+                WHERE 
+                  r.commentId = c.commentId
+                ORDER BY 
+                  r.createdAt DESC
+              )
+            )
+          )
+        FROM 
+          comments c
+        WHERE 
+          p.postId = c.postId
+        ORDER BY 
+          c.createdAt DESC
+      ) AS comments
+    FROM 
+      post p
+    WHERE 
+      p.postId = ?`;
+
   try {
     connection.query(query, [id], async (err, data) => {
       if (err) {
@@ -22,25 +62,48 @@ export const getPostController = async (req, res) => {
 
 export const getAllPostController = async (req, res) => {
   const userId = req?.user?.userId;
-
   const query = `
   SELECT 
     p.*, 
-    JSON_ARRAYAGG(
-      JSON_OBJECT(
-        'commentId', c.commentId,
-        'content', c.content,
-        'createdAt', c.createdAt,
-        'updatedAt', c.updatedAt
-      )) AS comments
+    (
+      SELECT 
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'commentId', c.commentId,
+            'content', c.content,
+            'createdAt', c.createdAt,
+            'updatedAt', c.updatedAt,
+            'replies', (
+              SELECT 
+                JSON_ARRAYAGG(
+                  JSON_OBJECT(
+                    'replyId', r.replyId,
+                    'content', r.content,
+                    'createdAt', r.createdAt,
+                    'updatedAt', r.updatedAt
+                  )
+                )
+              FROM 
+                reply r
+              WHERE 
+                r.commentId = c.commentId
+              ORDER BY 
+                r.createdAt DESC
+            )
+          )
+        )
+      FROM 
+        comments c
+      WHERE 
+        p.postId = c.postId
+      ORDER BY 
+        c.createdAt DESC
+    ) AS comments
   FROM 
     post p
-  LEFT JOIN 
-    comments c ON p.postId = c.postId
   WHERE 
     NOT p.userId = ?
-  GROUP BY 
-    p.postId`;
+  `;
 
   try {
     connection.query(query, [userId], async (err, data) => {
@@ -63,16 +126,27 @@ export const getAllPostController = async (req, res) => {
 export const deletePostController = async (req, res) => {
   const id = req.params.id;
   const findUserQuery = "select * from post where postId = ?";
-  const query = "delete from post where postId = ?";
+  const query =
+    "delete from post where postId =? union delete from likes where postId =?";
+  let q =
+    "DELETE FROM post INNER JOIN comment ON post.postId = comment.postId WHERE postId = ?";
   try {
-    connection.query(findUserQuery, [id], (err, data) => {
+    connection.query(q, [id], (err, data) => {
       if (err) {
         return res.status(400).json(CreateResponse(err.sqlMessage));
       } else {
         if (data.length == 0) {
-          return res.status(400).json(CreateResponse("Post Does not Exist"));
+          return res
+            .status(400)
+            .json(CreateResponse(null, null, "Post Does not Exist"));
         } else {
-          connection.query(query, [id], async (err, data) => {
+          connection.query(query, [id, id], async (err, data) => {
+            if (err) {
+              console.log("err :>> ", err);
+              return res
+                .status(400)
+                .json(CreateResponse(null, null, "Error in deleting post."));
+            }
             return await res
               .status(200)
               .json(CreateResponse(null, null, "Post Deleted SuccessFully!"));
@@ -86,7 +160,7 @@ export const deletePostController = async (req, res) => {
 };
 
 export const createPostController = async (req, res) => {
-  const { title, content, createdAt, updatedAt, imageUrl } = req.body;
+  const { title, content, createdAt, imageUrl } = req.body;
   const userId = req.user.userId;
 
   const findUserQuery =

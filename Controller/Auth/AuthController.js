@@ -11,20 +11,20 @@ import { v4 as uuidv4 } from "uuid";
 export const LoginController = async (req, res) => {
   const { email, password } = req.body;
   const findUserQuery = "select * from user where email = ?";
-  try{
-      connection.query(findUserQuery, [email], async (err, data) => {
+  try {
+    connection.query(findUserQuery, [email], async (err, data) => {
       if (data.length == 0) {
-       await res
+        await res
           .status(400)
           .json(CreateResponse("User does not exist.Please Regiser to continue"));
       } else {
         const dbPassword = data[0].password;
         const match = await bcrypt.compare(password, dbPassword);
         if (!match) {
-         return res.status(400).json(CreateResponse("Password does not match"));
+          return res.status(400).json(CreateResponse("Password does not match"));
         } else {
           data[0].token = genrateToken(data);
-          return await  res
+          return await res
             .status(200)
             .json(
               CreateResponse(
@@ -36,7 +36,7 @@ export const LoginController = async (req, res) => {
         }
       }
     });
-  }catch(err){
+  } catch (err) {
     return res.status(400).json(CreateResponse(err));
   }
 };
@@ -51,11 +51,11 @@ export const RegisterController = async (req, res) => {
     connection.query(findUserQuery, [email], async (err, data) => {
       if (err) {
         res.status(400).json(CreateResponse(err));
-      }else{
+      } else {
         if (data.length > 0) {
-         return res
+          return res
             .status(400)
-            .json(CreateResponse("User does exist.Please Login to continue"));
+            .json(CreateResponse(null, null, "User does exist.Please Login to continue"));
         } else {
           const id = uuidv4();
           const hashedPassword = genrateHashPassword(password);
@@ -63,10 +63,10 @@ export const RegisterController = async (req, res) => {
             inserQuery,
             [id, email, hashedPassword, userName],
             (err, data) => {
-            if (err) {
-              res.status(400).json(CreateResponse(err));
-            }
-            res
+              if (err) {
+                res.status(400).json(CreateResponse(err));
+              }
+              res
                 .status(200)
                 .json(
                   CreateResponse(
@@ -97,10 +97,10 @@ export const ResetPasswordController = async (req, res) => {
       }
 
       if (data.length = 0) {
-       return  await res
+        return await res
           .status(400)
           .json(
-            CreateResponse("User does not exist.Please Register to continue")
+            CreateResponse(null, null, "User does not exist.Please Register to continue")
           );
       } else {
         const dbPassword = genrateHashPassword(newPassword);
@@ -109,16 +109,17 @@ export const ResetPasswordController = async (req, res) => {
           [dbPassword, email],
           async (err, data) => {
             if (err) {
-             return res.status(400).json(CreateResponse(err));
-            }else{
+              return res.status(400).json(CreateResponse(err));
+            } else {
               return await res
-                 .status(200)
-                 .json(
-                   CreateResponse(
-                     null,
-                     "Password reset successfully.Please Login to continue"
-                   )
-                 );
+                .status(200)
+                .json(
+                  CreateResponse(
+                    null,
+                    null,
+                    "Password reset successfully.Please Login to continue"
+                  )
+                );
 
             }
           }
@@ -126,6 +127,6 @@ export const ResetPasswordController = async (req, res) => {
       }
     });
   } catch (err) {
-   return  res.status(400).json(CreateResponse(err));
+    return res.status(400).json(CreateResponse(err));
   }
 };
