@@ -3,7 +3,7 @@ import {
   CreateResponse,
   genrateHashPassword,
   genrateToken,
-  removeField,
+  updateData,
 } from "../../helper.js";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
@@ -29,7 +29,7 @@ export const LoginController = async (req, res) => {
             .json(
               CreateResponse(
                 null,
-                removeField(data)[0],
+                updateData(data)[0],
                 "User Login Successfullly"
               )
             );

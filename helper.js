@@ -1,6 +1,9 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import moment from "moment";
+import multer from "multer";
+import path from 'path';
+
 const { JWT_SECRET, SALT } = process.env;
 
 export function CreateResponse(error, data, message) {
@@ -14,9 +17,10 @@ export function CreateResponse(error, data, message) {
   }
 }
 
-export function removeField(data) {
+export function updateData(data) {
   return data.map((item) => {
     delete item.password;
+    item.profileImage = item.profileImage ? `/uploads/${item.profileImage}` : null;
     return item;
   });
 }
@@ -49,3 +53,27 @@ export function formatDate(inputdate) {
   }
   return moment(timestamp).format("YYYY-MM-DD hh:mm:ss");
 }
+
+export const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null,'./uploads');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, uniqueSuffix + '-' + file.originalname)
+  }
+})
+
+export const upload = multer({
+  storage: storage,
+  fileFilter: function (req, file, callback) {
+    var ext = path.extname(file.originalname);
+    if (ext !== ".jpg" && ext !== ".jpeg" && ext !== ".png") {
+      return callback(new Error("Only images are allowed"));
+    }
+    callback(null, true);
+  },
+  limits: {
+    fileSize: 1024 * 1024 * 15,
+  },
+});
