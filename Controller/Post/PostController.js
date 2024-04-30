@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { CreateResponse, formatDate } from "../../helper.js";
 import { connection } from "../../Connection/dbConnection.js";
 
-export const getPostController = async (req, res) => {
+export const getPostController =  (req, res) => {
   const id = req.query.postId;
   const query = `SELECT 
   p.*, 
@@ -13,15 +13,13 @@ export const getPostController = async (req, res) => {
           'commentId', c.commentId,
           'content', c.content,
           'createdAt', c.createdAt,
-          'updatedAt', c.updatedAt,
           'replies', (
             SELECT 
               JSON_ARRAYAGG(
                 JSON_OBJECT(
                   'replyId', r.replyId,
                   'content', r.content,
-                  'createdAt', r.createdAt,
-                  'updatedAt', r.updatedAt
+                  'createdAt', r.createdAt
                     )
                   )
                 FROM 
@@ -45,22 +43,23 @@ export const getPostController = async (req, res) => {
     WHERE 
       p.postId = ?`;
 
+
   try {
-    connection.query(query, [id], async (err, data) => {
+    connection.query(query, [id],  (err, data) => {
       if (err) {
         return res.status(400).json(CreateResponse(err));
-      } else {
-        return await res
+      } 
+
+        return  res
           .status(200)
           .json(CreateResponse(null, data[0], "Post Get SuccessFully!"));
-      }
     });
   } catch (err) {
-    return await res.status(400).json(CreateResponse(err));
+    return  res.status(400).json(CreateResponse(err));
   }
 };
 
-export const getAllPostController = async (req, res) => {
+export const getAllPostController =  (req, res) => {
   const userId = req?.user?.userId;
   const query = `
   SELECT 
@@ -72,15 +71,13 @@ export const getAllPostController = async (req, res) => {
             'commentId', c.commentId,
             'content', c.content,
             'createdAt', c.createdAt,
-            'updatedAt', c.updatedAt,
             'replies', (
               SELECT 
                 JSON_ARRAYAGG(
                   JSON_OBJECT(
                     'replyId', r.replyId,
                     'content', r.content,
-                    'createdAt', r.createdAt,
-                    'updatedAt', r.updatedAt
+                    'createdAt', r.createdAt
                   )
                 )
               FROM 
@@ -106,28 +103,28 @@ export const getAllPostController = async (req, res) => {
   `;
 
   try {
-    connection.query(query, [userId], async (err, data) => {
-      if (err) {
-        return res.status(400).json(CreateResponse(err.sqlMessage));
-      } else {
+    connection.query(query, [userId],  (err, data) => {
+      if (err) return res.status(400).json(CreateResponse(err.sqlMessage));
+
+
         data.forEach((post) => {
           post.comments = JSON.parse(post.comments);
         });
+      
         return res
           .status(200)
           .json(CreateResponse(null, data, "Posts Get Successfully!"));
-      }
     });
   } catch (err) {
-    res.status(400).json(CreateResponse(err.sqlMessage));
+    res.status(400).json(CreateResponse(err));
   }
 };
 
-export const deletePostController = async (req, res) => {
+export const deletePostController =  (req, res) => {
   const id = req.params.id;
-  const findUserQuery = "select * from post where postId = ?";
+  const findUserQuery = "SELECT * from post WHERE postId = ?";
   const query =
-    "delete from post where postId =? union delete from likes where postId =?";
+    "delete from post WHERE postId =? union delete from likes WHERE postId =?";
   let q =
     "DELETE FROM post INNER JOIN comment ON post.postId = comment.postId WHERE postId = ?";
   try {
@@ -140,14 +137,13 @@ export const deletePostController = async (req, res) => {
             .status(400)
             .json(CreateResponse(null, null, "Post Does not Exist"));
         } else {
-          connection.query(query, [id, id], async (err, data) => {
+          connection.query(query, [id, id],  (err, data) => {
             if (err) {
-              console.log("err :>> ", err);
               return res
                 .status(400)
                 .json(CreateResponse(null, null, "Error in deleting post."));
             }
-            return await res
+            return  res
               .status(200)
               .json(CreateResponse(null, null, "Post Deleted SuccessFully!"));
           });
@@ -159,40 +155,37 @@ export const deletePostController = async (req, res) => {
   }
 };
 
-export const createPostController = async (req, res) => {
-  const { title, content, createdAt, imageUrl } = req.body;
+export const createPostController =  (req, res) => {
+  const { title, content, imageUrl } = req.body;
   const userId = req.user.userId;
 
   const findUserQuery =
-    "insert into post (userId,postId, title, content, createdAt, updatedAt, imageUrl) values(?,?,?,?,?,?,?)";
+    "ONSERT INTO post (userId,postId, title, content, createdAt, imageUrl) values(?)";
   const postId = uuidv4();
   const passData = [
     userId,
     postId,
     title,
     content,
-    formatDate(createdAt),
-    formatDate(Date.now()),
+    formatDate(),
     imageUrl,
   ];
   connection.query(findUserQuery, passData, (err, data) => {
-    if (err) {
-      res.status(400).json(CreateResponse(err.sqlMessage));
-    } else {
+    if (err) return res.status(400).json(CreateResponse(err.sqlMessage));
+
       res
         .status(200)
         .json(CreateResponse(null, null, "Post Created SuccessFully!"));
-    }
   });
 };
 
-export const updatePostController = async (req, res) => {
+export const updatePostController =  (req, res) => {
   const { postId, title, content, imageUrl } = req.body;
 
   const findUserQuery =
-    "UPDATE post SET title = ?, content = ?, updatedAt = ?, imageUrl = ? WHERE postId =?";
+    "UPDATE post SET title = ?, content = ?, imageUrl = ? WHERE postId =?";
 
-  const passData = [title, content, formatDate(Date, now()), imageUrl, postId];
+  const passData = [title, content, imageUrl, postId];
   connection.query(findUserQuery, passData, (err, data) => {
     if (err) {
       return res.status(400).json(CreateResponse(err.sqlMessage));
@@ -204,13 +197,13 @@ export const updatePostController = async (req, res) => {
   });
 };
 
-export const LikePostController = async (req, res) => {
+export const LikePostController =  (req, res) => {
   const { postId } = req.body;
   const userId = req.user.userId;
-  const checkLike = "select * from likes where userId = ? and  postId = ?";
-  const unlikePost = "delete from likes where userId = ? and  postId = ?";
+  const checkLike = "SELECT * FROM likes WHERE userId = ? AND postId = ?";
+  const unlikePost = "DELETE FROM likes WHERE userId = ? AND postId = ?";
   const likePostQuery =
-    "insert into likes (userId, postId, likeId) values(?,?,?)";
+    "INSERT INTO likes (userId, postId, likeId) VALUES(?)";
   const likeId = uuidv4();
   connection.query(checkLike, [userId, postId], (err, data) => {
     if (err) {
