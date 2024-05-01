@@ -151,13 +151,13 @@ export const deletePostController = (req, res) => {
         if (data.length == 0) {
           return res
             .status(400)
-            .json(CreateResponse(null, null, "Post Does not Exist"));
+            .json(CreateResponse("Post Does not Exist"));
         } else {
           connection.query(query, [id, id], (err, data) => {
             if (err) {
               return res
                 .status(400)
-                .json(CreateResponse(null, null, "Error in deleting post."));
+                .json(CreateResponse("Error in deleting post."));
             }
             return res
               .status(200)
@@ -176,7 +176,7 @@ export const createPostController = (req, res) => {
   const userId = req.user.userId;
 
   const findUserQuery =
-    "ONSERT INTO post (userId,postId, title, content, createdAt, imageUrl) values(?,?,?,?,?,?)";
+    "INSERT INTO post (userId,postId, title, content, createdAt, imageUrl) values(?,?,?,?,?,?)";
   const postId = uuidv4();
   const passData = [
     userId,
@@ -378,7 +378,6 @@ export const filterPostController = (req, res) => {
       return res.status(200).json(CreateResponse(null, data, "Posts retrieved successfully!"));
     });
   } catch (error) {
-    console.log('error :>> ', error);
     return res.status(400).json(CreateResponse(error));
   }
 }

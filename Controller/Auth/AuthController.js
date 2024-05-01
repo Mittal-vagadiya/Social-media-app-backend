@@ -57,6 +57,7 @@ export const RegisterController = (req, res) => {
             .status(200)
             .json(
               CreateResponse(
+                null, null,
                 "User Registerd Successfullly.Please login to continue"
               )
             );
@@ -98,6 +99,7 @@ export const ResetPasswordController = (req, res) => {
               .status(200)
               .json(
                 CreateResponse(
+                  null, null,
                   "Password reset successfully.Please Login to continue"
                 )
               );

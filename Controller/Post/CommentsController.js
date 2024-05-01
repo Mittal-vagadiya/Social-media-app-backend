@@ -20,7 +20,7 @@ export const deleteCommentController = (req, res) => {
           }
           return res
             .status(200)
-            .json(CreateResponse("Comment Deleted SuccessFully!"));
+            .json(CreateResponse(null, null, "Comment Deleted SuccessFully!"));
         });
       }
     });
@@ -50,7 +50,7 @@ export const createCommentController = (req, res) => {
       } else {
         return res
           .status(200)
-          .json(CreateResponse("Comment created successfully!"));
+          .json(CreateResponse(null, null, "Comment created successfully!"));
       }
     });
   } catch (err) {
@@ -73,7 +73,7 @@ export const updateCommentController = async (req, res) => {
       } else {
         return res
           .status(200)
-          .json(CreateResponse("Comment Updated SuccessFully!"));
+          .json(CreateResponse(null, null, "Comment Updated SuccessFully!"));
       }
     });
 
@@ -104,7 +104,7 @@ export const replyCommentController = (req, res) => {
       } else {
         return res
           .status(200)
-          .json(CreateResponse("Reply added successfully!"));
+          .json(CreateResponse(null, null, "Reply added successfully!"));
       }
     });
   } catch (err) {
@@ -124,7 +124,7 @@ export const deletereplyCommentController = (req, res) => {
       } else {
         return res
           .status(200)
-          .json(CreateResponse("Reply deleted successfully!"));
+          .json(CreateResponse(null, null, "Reply deleted successfully!"));
       }
     });
   } catch (err) {
@@ -149,7 +149,7 @@ export const updatereplyCommentController = (req, res) => {
       } else {
         return res
           .status(200)
-          .json(CreateResponse("Reply Updated successfully!"));
+          .json(CreateResponse(null, null, "Reply Updated successfully!"));
 
       }
     });
@@ -157,8 +157,6 @@ export const updatereplyCommentController = (req, res) => {
     return res.status(400).json(CreateResponse(err));
   }
 };
-
-
 
 export const filterCommentController = (req, res) => {
   const { orderBy, filterPeriod, startDate, endDate, AuthorId } = req.query;
@@ -219,7 +217,6 @@ export const filterCommentController = (req, res) => {
       return res.status(200).json(CreateResponse(null, data, "Comments retrieved successfully!"));
     });
   } catch (error) {
-    console.log('error :>> ', error);
     return res.status(400).json(CreateResponse(error));
   }
 }
