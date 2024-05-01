@@ -1,4 +1,5 @@
 import { connection } from "../../Connection/dbConnection.js";
+import { LoginUserValdations, RegisterUserValdations, ResetPasswordValdations } from "../../Validations/authValidation.js";
 import {
   CreateResponse,
   genrateHashPassword,
@@ -11,6 +12,11 @@ import { v4 as uuidv4 } from "uuid";
 export const LoginController = (req, res) => {
   const { email, password } = req.body;
   const findUserQuery = "SELECT * from user WHERE email = ?";
+  const { error } = LoginUserValdations.validate(req.body);
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   try {
     connection.query(findUserQuery, [email], async (err, data) => {
       if (err) return res.status(500).json(CreateResponse(err));
@@ -36,6 +42,12 @@ export const LoginController = (req, res) => {
 
 export const RegisterController = (req, res) => {
   const { userName, email, password } = req.body;
+
+  const { error } = RegisterUserValdations.validate(req.body);
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   const findUserQuery = "SELECT * FROM user WHERE email = ?";
   const inserQuery =
     "INSERT INTO user (userId,email,password,userName) VALUES (?,?,?,?)";
@@ -74,6 +86,10 @@ export const ResetPasswordController = (req, res) => {
   const findUserQuery = "SELECT * FROM user WHERE email = ?";
   const updatePasswordQuery = "UPDATE user SET password = ? WHERE email = ?";
 
+  const { error } = ResetPasswordValdations.validate(req.body);
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
   try {
     connection.query(findUserQuery, [email], async (err, data) => {
       if (err) {

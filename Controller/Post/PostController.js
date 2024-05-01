@@ -1,9 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
 import { CreateResponse, formatDate } from "../../helper.js";
 import { connection } from "../../Connection/dbConnection.js";
+import { LikePostSchemaValidation, PostIDValidation, postSchemaValidation, querySchema, updatePostSchemaValidation } from "../../Validations/postValidations.js";
+import { UserIDValidation } from "../../Validations/userValidations.js";
 
 export const getPostController = (req, res) => {
   const id = req.query.postId;
+
+  const { error } = PostIDValidation.validate({id});
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
   const query = `SELECT 
   p.*,
   (SELECT COUNT(*) FROM likes l WHERE l.postId = p.postId) AS likes,
@@ -62,7 +69,7 @@ export const getPostController = (req, res) => {
   try {
     connection.query(query, [id], (err, data) => {
       if (err) {
-        return res.status(400).json(CreateResponse(err));
+        return res.status(400).json(CreateResponse(err.sqlMessage));
       }
       data.forEach((post) => {
         post.comments = JSON.parse(post.comments);
@@ -78,6 +85,12 @@ export const getPostController = (req, res) => {
 
 export const getAllPostController = (req, res) => {
   const userId = req?.user?.userId;
+
+  const { error } = UserIDValidation.validate({id:userId});
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   const query = `
   SELECT 
     p.*, 
@@ -139,6 +152,12 @@ export const getAllPostController = (req, res) => {
 
 export const deletePostController = (req, res) => {
   const id = req.params.id;
+
+  const { error } = PostIDValidation.validate({id});
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   const query =
     "delete from post WHERE postId =? union delete from likes WHERE postId =?";
   let q =
@@ -175,6 +194,11 @@ export const createPostController = (req, res) => {
   const { title, content, imageUrl } = req.body;
   const userId = req.user.userId;
 
+  const { error } = postSchemaValidation.validate(req.body)
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   const findUserQuery =
     "INSERT INTO post (userId,postId, title, content, createdAt, imageUrl) values(?,?,?,?,?,?)";
   const postId = uuidv4();
@@ -198,6 +222,11 @@ export const createPostController = (req, res) => {
 export const updatePostController = (req, res) => {
   const { postId, title, content, imageUrl } = req.body;
 
+  const { error } = updatePostSchemaValidation.validate(req.body)
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   const findUserQuery =
     "UPDATE post SET title = ?, content = ?, imageUrl = ? WHERE postId =?";
 
@@ -216,6 +245,12 @@ export const updatePostController = (req, res) => {
 export const LikePostController = (req, res) => {
   const { postId } = req.body;
   const userId = req.user.userId;
+
+  const { error } = LikePostSchemaValidation.validate({id:userId,postId:postId})
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   const checkLike = "SELECT * FROM likes WHERE userId = ? AND postId = ?";
   const unlikePost = "DELETE FROM likes WHERE userId = ? AND postId = ?";
   const likePostQuery =
@@ -256,6 +291,10 @@ export const LikePostController = (req, res) => {
 
 export const getUserPostController = (req, res) => {
   const userId = req.user?.userId;
+  const { error } = UserIDValidation.validate({id:userId})
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
   const query = `
         SELECT p.*, u.userId, u.profileImage, u.email, u.userName,
         (SELECT COUNT(*) FROM likes l WHERE l.postId = p.postId) AS likes
@@ -303,7 +342,7 @@ export const getUserPostController = (req, res) => {
   try {
     connection.query(query, [userId], (err, data) => {
       if (err) {
-        return res.status(400).json(CreateResponse(err));
+        return res.status(400).json(CreateResponse(err,sqlMessage));
       }
       data.forEach((post) => {
         post.comments = JSON.parse(post.comments);
@@ -321,9 +360,11 @@ export const getUserPostController = (req, res) => {
 export const filterPostController = (req, res) => {
   const { orderBy, filterPeriod, startDate, endDate, AuthorId } = req.query;
 
-  if (orderBy && !['New to old', 'Old to new'].includes(orderBy)) {
-    return res.status(400).json(CreateResponse("Invalid value for orderBy. Only 'New to old' and 'Old to new' are allowed."));
+  const { error } = querySchema.validate(req.query)
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }
+  
   let orderByFilter = '';
 
   if (orderBy) { // Default order by createdA

@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { CreateResponse, updateData } from "../../helper.js";
 import * as fs from "fs";
 import path from "path";
+import { UserIDValidation, followerUserSchemaValidation, updateUserSchemaValidation, userSchemaValdation } from "../../Validations/userValidations.js";
 
 const salt = parseInt(process.env.SALT);
 
@@ -18,6 +19,11 @@ function RemoveImage(file) {
 
 export const getUserController = (req, res) => {
   const id = req.query.userId;
+
+  const { error } = UserIDValidation.validate({id:id});
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
 
   let postQuery = `SELECT 
                     u.*,
@@ -65,6 +71,12 @@ export const getAllUserController = (req, res) => {
 
 export const deleteUserController = (req, res) => {
   const id = req.params.id;
+
+  const { error } = UserIDValidation.validate({id});
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   const findUserQuery = "SELECT * FROM user WHERE userId = ?";
 
   connection.query(findUserQuery, [id], (err, data) => {
@@ -94,6 +106,12 @@ export const deleteUserController = (req, res) => {
 
 export const createUserController = (req, res) => {
   const { userName, email, password, bio, age } = req.body;
+
+  const { error } = userSchemaValdation.validate(req.body);
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   const AddUserQuery =
     "INSERT INTO user (userId,email,userName,password,bio,age,profileImage) VALUES(?,?,?,?,?,?,?)";
   const userId = uuidv4();
@@ -113,6 +131,12 @@ export const createUserController = (req, res) => {
 
 export const updateUserController = async (req, res) => {
   const { userId, userName, bio, age } = req.body;
+  
+  const { error } = updateUserSchemaValidation.validate(req.body);
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
+
   const findUserQuery = "SELECT * FROM user WHERE userId=?";
   const updateUserQuery =
     "UPDATE user SET userName=?, bio=?, age=?, profileImage=? WHERE userId=?";
@@ -140,6 +164,11 @@ export const updateUserController = async (req, res) => {
 export const followUserController = (req, res) => {
   const { follower } = req.body;
   const userId = req.user.userId;
+
+  const { error } = followerUserSchemaValidation.validate({id:userId,follower});
+  if (error) {
+    return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
+  }
 
   const followUserQuery =
     "SELECT * FROM followers WHERE userId = ? AND follower = ?";
