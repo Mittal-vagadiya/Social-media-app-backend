@@ -56,11 +56,12 @@ export function formatDate(inputdate) {
 
 export const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null,'./uploads');
+    cb(null, './uploads');
   },
   filename: function (req, file, cb) {
+    let removeSpace = file.originalname.replace(/\s/g, '_');
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, uniqueSuffix + '-' + file.originalname)
+    cb(null, uniqueSuffix + '-' + removeSpace)
   }
 })
 
@@ -68,7 +69,7 @@ export const upload = multer({
   storage: storage,
   fileFilter: function (req, file, callback) {
     var ext = path.extname(file.originalname);
-    if (ext !== ".jpg" && ext !== ".jpeg" && ext !== ".png") {
+    if (ext !== ".jpg" && ext !== ".jpeg" && ext !== ".png" && ext != '.jfif') {
       return callback(new Error("Only images are allowed"));
     }
     callback(null, true);

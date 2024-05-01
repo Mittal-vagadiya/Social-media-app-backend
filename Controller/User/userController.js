@@ -16,7 +16,7 @@ function RemoveImage(file) {
   });
 }
 
-export const getUserController =  (req, res) => {
+export const getUserController = (req, res) => {
   const id = req.query.userId;
 
   let postQuery = `SELECT 
@@ -34,14 +34,14 @@ export const getUserController =  (req, res) => {
 `;
 
   try {
-    connection.query(postQuery, [id],  (err, PostData) => {
+    connection.query(postQuery, [id], (err, PostData) => {
       if (err) {
-        return  res.status(400).json(CreateResponse(err.sqlMessage));
+        return res.status(400).json(CreateResponse(err.sqlMessage));
       }
       let User = updateData(PostData)[0];
-      connection.query(followersQuery, [id],  (err, data) => {
+      connection.query(followersQuery, [id], (err, data) => {
         User.followers = data[0].followCount;
-        return  res
+        return res
           .status(200)
           .json(CreateResponse(null, User, "User Get SuccessFully!"));
       });
@@ -51,19 +51,19 @@ export const getUserController =  (req, res) => {
   }
 };
 
-export const getAllUserController =  (req, res) => {
+export const getAllUserController = (req, res) => {
   const query = "SELECT * FROM user";
-  connection.query(query,  (err, data) => {
+  connection.query(query, (err, data) => {
     if (err) {
       return res.status(400).json(CreateResponse(err.sqlMessage));
     }
-    return  res
+    return res
       .status(200)
       .json(CreateResponse(null, updateData(data), "Users Get SuccessFully!"));
   });
 };
 
-export const deleteUserController =  (req, res) => {
+export const deleteUserController = (req, res) => {
   const id = req.params.id;
   const findUserQuery = "SELECT * FROM user WHERE userId = ?";
 
@@ -76,12 +76,12 @@ export const deleteUserController =  (req, res) => {
       }
       RemoveImage(data[0].profileImage);
       let q = "DELETE FROM user WHERE userId=?";
-      connection.query(q, [id],  (err, data) => {
+      connection.query(q, [id], (err, data) => {
         if (err) {
           return res.status(400).json(CreateResponse(err.sqlMessage));
         } else {
           const deletedUser = data[0];
-          return  res
+          return res
             .status(200)
             .json(
               CreateResponse(null, deletedUser, "User Deleted SuccessFully!")
@@ -92,19 +92,19 @@ export const deleteUserController =  (req, res) => {
   });
 };
 
-export const createUserController =  (req, res) => {
+export const createUserController = (req, res) => {
   const { userName, email, password, bio, age } = req.body;
   const AddUserQuery =
-    "INSERT INTO user (userId,email,userName,password,bio,age,profileImage) VALUES(?)";
+    "INSERT INTO user (userId,email,userName,password,bio,age,profileImage) VALUES(?,?,?,?,?,?,?)";
   const userId = uuidv4();
   const hash = bcrypt.hashSync(password, salt);
   const passData = [userId, email, userName, hash, bio, age, req.file.filename];
-  connection.query(AddUserQuery, passData,  (err, data) => {
+  connection.query(AddUserQuery, passData, (err, data) => {
     if (err) {
       RemoveImage(req.file.filename);
       return res.status(400).json(CreateResponse(err.sqlMessage));
     } else {
-      return  res
+      return res
         .status(200)
         .json(CreateResponse(null, null, "User Created SuccessFully!"));
     }
@@ -124,12 +124,12 @@ export const updateUserController = async (req, res) => {
     }
 
     RemoveImage(data[0].profileImage);
-    connection.query(updateUserQuery, passData,  (err, data) => {
+    connection.query(updateUserQuery, passData, (err, data) => {
       if (err) {
         RemoveImage(req.file.filename);
         return res.status(400).json(CreateResponse(err.sqlMessage));
       } else {
-        return  res
+        return res
           .status(200)
           .json(CreateResponse(null, null, "User Updated SuccessFully!"));
       }
@@ -137,7 +137,7 @@ export const updateUserController = async (req, res) => {
   });
 };
 
-export const followUserController =  (req, res) => {
+export const followUserController = (req, res) => {
   const { follower } = req.body;
   const userId = req.user.userId;
 

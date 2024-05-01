@@ -2,10 +2,11 @@ import { v4 as uuidv4 } from "uuid";
 import { CreateResponse, formatDate } from "../../helper.js";
 import { connection } from "../../Connection/dbConnection.js";
 
-export const getPostController =  (req, res) => {
+export const getPostController = (req, res) => {
   const id = req.query.postId;
   const query = `SELECT 
-  p.*, 
+  p.*,
+  (SELECT COUNT(*) FROM likes l WHERE l.postId = p.postId) AS likes,
   (
     SELECT 
       JSON_ARRAYAGG(
@@ -13,17 +14,30 @@ export const getPostController =  (req, res) => {
           'commentId', c.commentId,
           'content', c.content,
           'createdAt', c.createdAt,
+          'commentor',  (JSON_OBJECT(
+            'proflieImage', cu.profileImage,
+            'userName', cu.userName,
+            'userId', cu.userId
+        )),
           'replies', (
             SELECT 
               JSON_ARRAYAGG(
                 JSON_OBJECT(
                   'replyId', r.replyId,
                   'content', r.content,
-                  'createdAt', r.createdAt
+                  'createdAt', r.createdAt,
+                  'replier',(
+                    JSON_OBJECT(
+                      'proflieImage', cu.profileImage,
+                      'userName', cu.userName,
+                      'userId', cu.userId
+                    )
+                  )
                     )
                   )
                 FROM 
                   reply r
+                JOIN user cu ON c.userId = cu.userId
                 WHERE 
                   r.commentId = c.commentId
                 ORDER BY 
@@ -33,6 +47,8 @@ export const getPostController =  (req, res) => {
           )
         FROM 
           comments c
+        JOIN 
+         user cu ON c.userId = cu.userId
         WHERE 
           p.postId = c.postId
         ORDER BY 
@@ -43,23 +59,24 @@ export const getPostController =  (req, res) => {
     WHERE 
       p.postId = ?`;
 
-
   try {
-    connection.query(query, [id],  (err, data) => {
+    connection.query(query, [id], (err, data) => {
       if (err) {
         return res.status(400).json(CreateResponse(err));
-      } 
-
-        return  res
-          .status(200)
-          .json(CreateResponse(null, data[0], "Post Get SuccessFully!"));
+      }
+      data.forEach((post) => {
+        post.comments = JSON.parse(post.comments);
+      });
+      return res
+        .status(200)
+        .json(CreateResponse(null, data[0], "Post Get SuccessFully!"));
     });
   } catch (err) {
-    return  res.status(400).json(CreateResponse(err));
+    return res.status(400).json(CreateResponse(err));
   }
 };
 
-export const getAllPostController =  (req, res) => {
+export const getAllPostController = (req, res) => {
   const userId = req?.user?.userId;
   const query = `
   SELECT 
@@ -103,26 +120,25 @@ export const getAllPostController =  (req, res) => {
   `;
 
   try {
-    connection.query(query, [userId],  (err, data) => {
+    connection.query(query, [userId], (err, data) => {
       if (err) return res.status(400).json(CreateResponse(err.sqlMessage));
 
 
-        data.forEach((post) => {
-          post.comments = JSON.parse(post.comments);
-        });
-      
-        return res
-          .status(200)
-          .json(CreateResponse(null, data, "Posts Get Successfully!"));
+      data.forEach((post) => {
+        post.comments = JSON.parse(post.comments);
+      });
+
+      return res
+        .status(200)
+        .json(CreateResponse(null, data, "Posts Get Successfully!"));
     });
   } catch (err) {
     res.status(400).json(CreateResponse(err));
   }
 };
 
-export const deletePostController =  (req, res) => {
+export const deletePostController = (req, res) => {
   const id = req.params.id;
-  const findUserQuery = "SELECT * from post WHERE postId = ?";
   const query =
     "delete from post WHERE postId =? union delete from likes WHERE postId =?";
   let q =
@@ -137,13 +153,13 @@ export const deletePostController =  (req, res) => {
             .status(400)
             .json(CreateResponse(null, null, "Post Does not Exist"));
         } else {
-          connection.query(query, [id, id],  (err, data) => {
+          connection.query(query, [id, id], (err, data) => {
             if (err) {
               return res
                 .status(400)
                 .json(CreateResponse(null, null, "Error in deleting post."));
             }
-            return  res
+            return res
               .status(200)
               .json(CreateResponse(null, null, "Post Deleted SuccessFully!"));
           });
@@ -155,12 +171,12 @@ export const deletePostController =  (req, res) => {
   }
 };
 
-export const createPostController =  (req, res) => {
+export const createPostController = (req, res) => {
   const { title, content, imageUrl } = req.body;
   const userId = req.user.userId;
 
   const findUserQuery =
-    "ONSERT INTO post (userId,postId, title, content, createdAt, imageUrl) values(?)";
+    "ONSERT INTO post (userId,postId, title, content, createdAt, imageUrl) values(?,?,?,?,?,?)";
   const postId = uuidv4();
   const passData = [
     userId,
@@ -173,13 +189,13 @@ export const createPostController =  (req, res) => {
   connection.query(findUserQuery, passData, (err, data) => {
     if (err) return res.status(400).json(CreateResponse(err.sqlMessage));
 
-      res
-        .status(200)
-        .json(CreateResponse(null, null, "Post Created SuccessFully!"));
+    res
+      .status(200)
+      .json(CreateResponse(null, null, "Post Created SuccessFully!"));
   });
 };
 
-export const updatePostController =  (req, res) => {
+export const updatePostController = (req, res) => {
   const { postId, title, content, imageUrl } = req.body;
 
   const findUserQuery =
@@ -197,13 +213,13 @@ export const updatePostController =  (req, res) => {
   });
 };
 
-export const LikePostController =  (req, res) => {
+export const LikePostController = (req, res) => {
   const { postId } = req.body;
   const userId = req.user.userId;
   const checkLike = "SELECT * FROM likes WHERE userId = ? AND postId = ?";
   const unlikePost = "DELETE FROM likes WHERE userId = ? AND postId = ?";
   const likePostQuery =
-    "INSERT INTO likes (userId, postId, likeId) VALUES(?)";
+    "INSERT INTO likes (userId, postId, likeId) VALUES(?,?,?)";
   const likeId = uuidv4();
   connection.query(checkLike, [userId, postId], (err, data) => {
     if (err) {
@@ -237,3 +253,132 @@ export const LikePostController =  (req, res) => {
     }
   });
 };
+
+export const getUserPostController = (req, res) => {
+  const userId = req.user?.userId;
+  const query = `
+        SELECT p.*, u.userId, u.profileImage, u.email, u.userName,
+        (SELECT COUNT(*) FROM likes l WHERE l.postId = p.postId) AS likes
+        ,(SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'commentId', c.commentId,
+                    'content', c.content,
+                    'createdAt', c.createdAt,
+                    'commentor',  (JSON_OBJECT(
+                        'proflieImage', cu.profileImage,
+                        'userName', cu.userName,
+                        'userId', cu.userId
+                    )),
+                    'replies', (SELECT JSON_ARRAYAGG(
+                                    JSON_OBJECT(
+                                        'replyId', r.replyId,
+                                        'content', r.content,
+                                        'createdAt', r.createdAt,
+                                        'replier',(
+                                          JSON_OBJECT(
+                                            'proflieImage', cu.profileImage,
+                                            'userName', cu.userName,
+                                            'userId', cu.userId
+                                          )
+                                        )
+                                    )
+                                )
+                                FROM reply r
+                                JOIN user cu ON c.userId = cu.userId
+                                WHERE c.commentId = r.commentId
+                                ORDER BY r.createdAt
+                            )
+                )
+            )
+        FROM comments c
+        JOIN user cu ON c.userId = cu.userId
+        WHERE c.postId = p.postId
+        ORDER BY c.createdAt
+        ) AS comments
+      FROM post p
+      INNER JOIN user u ON u.userId = p.userId
+      WHERE u.userId = ?
+      GROUP BY p.postId;
+  `;
+  try {
+    connection.query(query, [userId], (err, data) => {
+      if (err) {
+        return res.status(400).json(CreateResponse(err));
+      }
+      data.forEach((post) => {
+        post.comments = JSON.parse(post.comments);
+      });
+
+      return res
+        .status(200)
+        .json(CreateResponse(null, data, "Post Get SuccessFully!"));
+    });
+  } catch (err) {
+    return res.status(400).json(CreateResponse(err));
+  }
+};
+
+export const filterPostController = (req, res) => {
+  const { orderBy, filterPeriod, startDate, endDate, AuthorId } = req.query;
+
+  if (orderBy && !['New to old', 'Old to new'].includes(orderBy)) {
+    return res.status(400).json(CreateResponse("Invalid value for orderBy. Only 'New to old' and 'Old to new' are allowed."));
+  }
+  let orderByFilter = '';
+
+  if (orderBy) { // Default order by createdA
+    if (orderBy === 'New to old') {
+      orderByFilter = `ORDER BY createdAt DESC`;
+    } else {
+      orderByFilter = `ORDER BY createdAt ASC`;
+    }
+  }
+
+  let dateFilter = '';
+  switch (filterPeriod) {
+    case 'pastWeek':
+      dateFilter = 'createdAt >= DATE_SUB(NOW(), INTERVAL 1 WEEK)';
+      break;
+    case 'pastMonth':
+      const currentMonth = new Date().getMonth();
+      dateFilter = `MONTH(createdAt) = ${currentMonth - 1}`;
+      break;
+    case 'pastYear':
+      const currentYear = new Date().getFullYear();
+      dateFilter = `YEAR(createdAt) = ${currentYear - 1}`;
+      break;
+    case 'dateRange':
+      if (!startDate || !endDate) {
+        return res.status(400).json(CreateResponse("Both start and end dates are required for date range filtering."));
+      }
+
+      if (startDate && endDate) {
+        dateFilter = `createdAt BETWEEN '${startDate}' AND '${endDate}'`;
+      } else {
+        // Default to the current date if startDate or endDate is not provided
+        dateFilter = `createdAt BETWEEN NOW() AND NOW()`;
+      }
+      break;
+    default:
+      break;
+  }
+
+  let authorFilter = '';
+  if (AuthorId) {
+    const authorIds = Array.isArray(AuthorId) ? AuthorId : [AuthorId];
+    authorFilter = `${dateFilter !== '' ? 'AND' : ''} userId IN (${authorIds.map(id => connection.escape(id)).join(',')})`;
+  };
+
+  const query = `SELECT * FROM post WHERE ${dateFilter} ${authorFilter} ${orderByFilter}`;
+  try {
+    connection.query(query, (err, data) => {
+      if (err) {
+        return res.status(400).json(CreateResponse(err));
+      }
+      return res.status(200).json(CreateResponse(null, data, "Posts retrieved successfully!"));
+    });
+  } catch (error) {
+    console.log('error :>> ', error);
+    return res.status(400).json(CreateResponse(error));
+  }
+}
