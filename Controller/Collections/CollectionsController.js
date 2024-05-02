@@ -12,58 +12,38 @@ export const createCollectionController = (req, res) => {
       res.status(400).json(CreateResponse(error.details.map((item) => item.message)))
     }
 
-    const findNameQuery = 'SELECT * FROM collections WHERE LOWER(collectionName) = LOWER(?)';
+    if (!userId) {
+      return res.status(400).json(CreateResponse("User ID is required."));
+    }
 
-    connection.query(findNameQuery, collectionName.trim(), (err, data) => {
-      if (err) return res.status(400).json(CreateResponse(err.sqlMessage));
+    const findNameQuery = 'SELECT * FROM collections WHERE LOWER(collectionName) = LOWER(?) and userId = ?';
+
+    connection.query(findNameQuery, [collectionName.trim(),userId], (err, data) => {
+      if (err){ return res.status(400).json(CreateResponse(err.sqlMessage));}
       if (data.length !== 0) {
         return res.status(400).json(CreateResponse('Collection with given name already exist.'))
       }
 
+      let collectionQuery, collectionData;
       if (collectionType === 'Public') {
-        const privateCollectionQuery =
-          "INSERT INTO collections (collectionId, userId, collectionType,collectionName,postIds) VALUES(?,?,?,?,?)";
-        const collectionId = uuidv4();
-        const passData = [
-          collectionId,
-          userId,
-          collectionType,
-          collectionName,
-          postId && postId.length >= 0 ? postId.toString() : null
-        ];
-
-        connection.query(privateCollectionQuery, passData, (err, data) => {
-          if (err) return res.status(400).json(CreateResponse('Error in creating Public Collection.'));
-          res
-            .status(200)
-            .json(CreateResponse(null, null, "Public Collection Created SuccessFully!"));
-        })
-
+        collectionQuery = "INSERT INTO collections (collectionId, userId, collectionType, collectionName, collaborator, postIds) VALUES (?, ?, ?, ?, ?, ?)";
+        collectionData = [uuidv4(), userId, collectionType, collectionName, JSON.stringify(collaborator || []), JSON.stringify(postId || [])];
       } else {
-        const PublicCollectionQuery =
-          "INSERT INTO collections (collectionId, userId, collectionType,collectionName,collaborator,postIds) VALUES(?,?,?,?,?,?)";
-        const collectionId = uuidv4();
-        const PublicCollectionpassData = [
-          collectionId,
-          userId,
-          collectionType,
-          collectionName,
-          collaborator.toString(),
-          postId && postId.length >= 0 ? postId.toString() : null
-        ];
-
-        connection.query(PublicCollectionQuery, PublicCollectionpassData, (err, data) => {
-          if (err) return res.status(400).json(CreateResponse('Error in creating Collection.'));
-          res
-            .status(200)
-            .json(CreateResponse(null, null, "Collection Created SuccessFully!"));
-        })
-
+        collectionQuery = "INSERT INTO collections (collectionId, userId, collectionType, collectionName, postIds) VALUES (?, ?, ?, ?, ?)";
+        collectionData = [uuidv4(), userId, collectionType, collectionName, JSON.stringify(postId || [])];
       }
+
+      connection.query(collectionQuery, collectionData, (err, data) => {
+        if (err) {
+          return res.status(500).json(CreateResponse(err.sqlMessage || "Error in creating collection."));
+        }
+        const successMessage = collectionType === 'Public' ? "Public Collection Created Successfully!" : "Collection Created Successfully!";
+        res.status(200).json(CreateResponse(null, null, successMessage));
+      });
+      
     });
 
   } catch (error) {
-    console.log('error :>> ', error);
     res.status(400).json(CreateResponse(error))
   }
 }
@@ -82,36 +62,36 @@ export const getUserCollectionsController = (req, res) => {
         c.userId,
         c.collectionName,
         c.collectionType,
+        (
+          SELECT JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'userId', u.userId,
+              'profileImage', u.profileImage
+            )
+          ) 
+          FROM user u 
+          WHERE JSON_CONTAINS(c.collaborator, JSON_QUOTE(u.userId)) > 0
+        ) AS collaborators,
         JSON_ARRAYAGG(JSON_OBJECT('postId', p.postId, 
         'content', p.content,
         'title',p.title,
-        'imageUrl',p.imageUrl ,
-        'userDetails', (
-          select JSON_ARRAYAGG(
-            JSON_OBJECT(
-              'userName',u.userName,
-              'profileImage',u.profileImage,
-              'userId',u.userId
-            )
-          )
-          from user u
-          where u.userId = p.userId
-        ))) as posts
+        'imageUrl',p.imageUrl
+      )) as posts
     FROM 
         collections c
     LEFT JOIN 
         post p ON JSON_CONTAINS(c.postIds, JSON_QUOTE(p.postId)) > 0
     WHERE 
-        c.userId = ?
+        c.userId = ? or JSON_CONTAINS(c.collaborator, JSON_QUOTE(?)) > 0
     GROUP BY 
         c.collectionId;
 `;
 
-
-    connection.query(findAllCollectionsWithPostsQuery, [userId], (err, data) => {
+    connection.query(findAllCollectionsWithPostsQuery, [userId,userId], (err, data) => {
       if (err) return res.status(400).json(CreateResponse(err.sqlMessage));
       data.forEach((post) => {
         post.posts = JSON.parse(post.posts);
+        post.collaborators = JSON.parse(post.collaborators);
       });
 
       res
@@ -123,7 +103,6 @@ export const getUserCollectionsController = (req, res) => {
     return res.status(400).json(CreateResponse(error))
   }
 }
-
 
 export const getrCollectionByIdController = (req, res) => {
   try {
@@ -143,18 +122,8 @@ export const getrCollectionByIdController = (req, res) => {
         JSON_ARRAYAGG(JSON_OBJECT('postId', p.postId, 
         'content', p.content,
         'title',p.title,
-        'imageUrl',p.imageUrl ,
-        'userDetails', (
-          select JSON_ARRAYAGG(
-            JSON_OBJECT(
-              'userName',u.userName,
-              'profileImage',u.profileImage,
-              'userId',u.userId
-            )
-          )
-          from user u
-          where u.userId = p.userId
-        ))) as posts
+        'imageUrl',p.imageUrl
+        )) as posts
     FROM 
         collections c
     LEFT JOIN 
