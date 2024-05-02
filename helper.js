@@ -35,7 +35,7 @@ export function genrateToken(data) {
       data: payload,
     },
     JWT_SECRET,
-    { expiresIn: "1h" }
+    { expiresIn: "1d" }
   );
 }
 
@@ -78,3 +78,35 @@ export const upload = multer({
     fileSize: 1024 * 1024 * 15,
   },
 });
+
+
+export function mergeAndRemoveDuplicates(str, arr) {
+  // Split the input strings into arrays
+  if (str?.length > 0) {
+    const strArray = str.split(",");
+    // Merge the arrays
+    const mergedArray = [...strArray, ...arr];
+    // Remove duplicates using Set
+    const uniqueSet = [...new Set(mergedArray)];
+
+    // Convert the unique set back to a comma-separated string
+    const uniqueString = uniqueSet.join(",");
+
+    return uniqueString;
+  } else {
+    const uniqueSet = [...new Set(arr)];
+
+    // Convert the unique set back to a comma-separated string
+    const uniqueString = uniqueSet.join(",");
+
+    return uniqueString;
+  }
+}
+
+export function removeMatchingItems(str, arr) {
+  let strArray = str.split(',');
+
+  strArray = strArray.filter(item => !arr.includes(item));
+
+  return strArray.join(',');
+} 

@@ -20,7 +20,7 @@ function RemoveImage(file) {
 export const getUserController = (req, res) => {
   const id = req.query.userId;
 
-  const { error } = UserIDValidation.validate({id:id});
+  const { error } = UserIDValidation.validate({ id: id });
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }
@@ -72,7 +72,7 @@ export const getAllUserController = (req, res) => {
 export const deleteUserController = (req, res) => {
   const id = req.params.id;
 
-  const { error } = UserIDValidation.validate({id});
+  const { error } = UserIDValidation.validate({ id });
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }
@@ -131,7 +131,7 @@ export const createUserController = (req, res) => {
 
 export const updateUserController = async (req, res) => {
   const { userId, userName, bio, age } = req.body;
-  
+
   const { error } = updateUserSchemaValidation.validate(req.body);
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
@@ -165,7 +165,7 @@ export const followUserController = (req, res) => {
   const { follower } = req.body;
   const userId = req.user.userId;
 
-  const { error } = followerUserSchemaValidation.validate({id:userId,follower});
+  const { error } = followerUserSchemaValidation.validate({ id: userId, follower });
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }

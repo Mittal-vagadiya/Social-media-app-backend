@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { AddPostToCollectionController, createCollectionController, getUserCollectionsController, removePostToCollectionController, updateUserCollectionController } from '../../Controller/Collections/CommentsController.js';
+import { AddPostToCollectionController, createCollectionController, deleteCollectionController, getUserCollectionsController, getrCollectionByIdController, removePostToCollectionController, updateUserCollectionController } from '../../Controller/Collections/CollectionsController.js';
 
 const collectionRoutes = express.Router();
 
@@ -9,11 +9,7 @@ collectionRoutes.get('/getUserCollections', getUserCollectionsController);
 collectionRoutes.post('/updateCollection', updateUserCollectionController);
 collectionRoutes.post('/addPostToCollection', AddPostToCollectionController);
 collectionRoutes.post('/removePostFromCollection', removePostToCollectionController);
-// collectionRoutes.post('/likePost', LikePostController);
-// collectionRoutes.get("/getUserPosts", getUserPostController);
-// collectionRoutes.get("/filterPost", filterPostController);
-
-// collectionRoutes.post("/archivePost", archivePost);
-
+collectionRoutes.get("/getCollectionById/:collectionId", getrCollectionByIdController);
+collectionRoutes.delete("/deleteCollection/:collectionId", deleteCollectionController);
 
 export default collectionRoutes;

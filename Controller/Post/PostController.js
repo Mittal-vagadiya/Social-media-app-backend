@@ -7,7 +7,7 @@ import { UserIDValidation } from "../../Validations/userValidations.js";
 export const getPostController = (req, res) => {
   const id = req.query.postId;
 
-  const { error } = PostIDValidation.validate({id});
+  const { error } = PostIDValidation.validate({ id });
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }
@@ -86,7 +86,7 @@ export const getPostController = (req, res) => {
 export const getAllPostController = (req, res) => {
   const userId = req?.user?.userId;
 
-  const { error } = UserIDValidation.validate({id:userId});
+  const { error } = UserIDValidation.validate({ id: userId });
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }
@@ -153,7 +153,7 @@ export const getAllPostController = (req, res) => {
 export const deletePostController = (req, res) => {
   const id = req.params.id;
 
-  const { error } = PostIDValidation.validate({id});
+  const { error } = PostIDValidation.validate({ id });
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }
@@ -246,7 +246,7 @@ export const LikePostController = (req, res) => {
   const { postId } = req.body;
   const userId = req.user.userId;
 
-  const { error } = LikePostSchemaValidation.validate({id:userId,postId:postId})
+  const { error } = LikePostSchemaValidation.validate({ id: userId, postId: postId })
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }
@@ -291,14 +291,14 @@ export const LikePostController = (req, res) => {
 
 export const getUserPostController = (req, res) => {
   const userId = req.user?.userId;
-  const { error } = UserIDValidation.validate({id:userId})
+  const { error } = UserIDValidation.validate({ id: userId })
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }
   const query = `
         SELECT p.*, u.userId, u.profileImage, u.email, u.userName,
-        (SELECT COUNT(*) FROM likes l WHERE l.postId = p.postId) AS likes
-        ,(SELECT JSON_ARRAYAGG(
+        (SELECT COUNT(*) FROM likes l WHERE l.postId = p.postId) AS likes,
+        (SELECT JSON_ARRAYAGG(
                 JSON_OBJECT(
                     'commentId', c.commentId,
                     'content', c.content,
@@ -337,12 +337,13 @@ export const getUserPostController = (req, res) => {
       FROM post p
       INNER JOIN user u ON u.userId = p.userId
       WHERE u.userId = ?
-      GROUP BY p.postId;
+      GROUP BY p.postId
+      ORDER BY p.createdAt DESC;
   `;
   try {
     connection.query(query, [userId], (err, data) => {
       if (err) {
-        return res.status(400).json(CreateResponse(err,sqlMessage));
+        return res.status(400).json(CreateResponse(err, sqlMessage));
       }
       data.forEach((post) => {
         post.comments = JSON.parse(post.comments);
@@ -364,7 +365,7 @@ export const filterPostController = (req, res) => {
   if (error) {
     return res.status(403).json(CreateResponse(error.details.map((item) => item.message)))
   }
-  
+
   let orderByFilter = '';
 
   if (orderBy) { // Default order by createdA
