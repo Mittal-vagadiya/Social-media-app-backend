@@ -27,6 +27,7 @@ export const getUserController = (req, res) => {
 
   let postQuery = `SELECT 
                     u.*,
+                    (SELECT COUNT(f.requestId) FROM friendlist f WHERE f.userId = ? AND IsApproved =true) AS following ,    
                     COUNT(p.postId) AS numPosts
                   FROM 
                     user u
@@ -40,7 +41,7 @@ export const getUserController = (req, res) => {
 `;
 
   try {
-    connection.query(postQuery, [id], (err, PostData) => {
+    connection.query(postQuery, [id, id], (err, PostData) => {
       if (err) {
         return res.status(400).json(CreateResponse(err.sqlMessage));
       }

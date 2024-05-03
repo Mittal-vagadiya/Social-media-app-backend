@@ -1,7 +1,7 @@
 import { CreateResponse, mergeAndRemoveDuplicates } from "../../helper.js"
 import { v4 as uuidv4 } from "uuid";
 import { connection } from "../../Connection/dbConnection.js";
-import { CollectionIdSchema, addPostToCollectionSchema, createCollectionSchema, getCollectionSchema, updateCollectionSchema } from "../../Validations/CollectionValidations.js";
+import { CollectionIdSchema, addPostToCollectionSchema, createCollectionSchema, getCollectionSchema, updateCollectionSchema } from "../../Validations/collectionValidations.js";
 
 export const createCollectionController = (req, res) => {
   try {
@@ -18,8 +18,8 @@ export const createCollectionController = (req, res) => {
 
     const findNameQuery = 'SELECT * FROM collections WHERE LOWER(collectionName) = LOWER(?) and userId = ?';
 
-    connection.query(findNameQuery, [collectionName.trim(),userId], (err, data) => {
-      if (err){ return res.status(400).json(CreateResponse(err.sqlMessage));}
+    connection.query(findNameQuery, [collectionName.trim(), userId], (err, data) => {
+      if (err) { return res.status(400).json(CreateResponse(err.sqlMessage)); }
       if (data.length !== 0) {
         return res.status(400).json(CreateResponse('Collection with given name already exist.'))
       }
@@ -40,7 +40,7 @@ export const createCollectionController = (req, res) => {
         const successMessage = collectionType === 'Public' ? "Public Collection Created Successfully!" : "Collection Created Successfully!";
         res.status(200).json(CreateResponse(null, null, successMessage));
       });
-      
+
     });
 
   } catch (error) {
@@ -87,7 +87,7 @@ export const getUserCollectionsController = (req, res) => {
         c.collectionId;
 `;
 
-    connection.query(findAllCollectionsWithPostsQuery, [userId,userId], (err, data) => {
+    connection.query(findAllCollectionsWithPostsQuery, [userId, userId], (err, data) => {
       if (err) return res.status(400).json(CreateResponse(err.sqlMessage));
       data.forEach((post) => {
         post.posts = JSON.parse(post.posts);

@@ -65,11 +65,36 @@ export const storage = multer.diskStorage({
   }
 })
 
+export const storyStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads/stories');
+  },
+  filename: function (req, file, cb) {
+    let removeSpace = file.originalname.replace(/\s/g, '_');
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, uniqueSuffix + '-' + removeSpace)
+  }
+})
+
+export const uploadStory = multer({
+  storage: storyStorage,
+  fileFilter: function (req, file, callback) {
+    var ext = path.extname(file.originalname);
+    if (ext !== ".jpg" && ext !== ".jpeg" && ext !== ".png") {
+      return callback(new Error("Only images are allowed"));
+    }
+    callback(null, true);
+  },
+  limits: {
+    fileSize: 1024 * 1024 * 15,
+  },
+});
+
 export const upload = multer({
   storage: storage,
   fileFilter: function (req, file, callback) {
     var ext = path.extname(file.originalname);
-    if (ext !== ".jpg" && ext !== ".jpeg" && ext !== ".png" && ext != '.jfif') {
+    if (ext !== ".jpg" && ext !== ".jpeg" && ext !== ".png") {
       return callback(new Error("Only images are allowed"));
     }
     callback(null, true);
