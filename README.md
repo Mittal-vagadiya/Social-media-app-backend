@@ -27,8 +27,13 @@ This project is a backend API implementation for an Instagram clone. It provides
    git clone https://github.com/your-username/instagram-clone-backend.git
 
 2. Install Dependencies: Navigate to the project directory and install the necessary dependencies using:
-    "npm install"
+
+    ```bash
+    npm install
+
 3. Configure Environment Variables: Create a .env file in the project root and add the following variables:
+   
+   ```bash
    PORT = 500
    SALT = 10
    CONNECTION_PASSWORD = 1234 (change this with your Db password)
@@ -37,4 +42,7 @@ This project is a backend API implementation for an Instagram clone. It provides
    CONNECTION_DATABASE= socialapp (change this with your Db name)
    JWT_SECRET = thisIsMyDemoApp
 
-4. Run the Application:Start the backend server using: "npm start"
+4. Run the Application:Start the backend server using:
+
+```bash
+ npm start
